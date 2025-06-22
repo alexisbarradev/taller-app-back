@@ -1,0 +1,40 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Ignorar wallet de Oracle Cloud
+src/main/resources/wallet/
+
+# Ignorar configuración sensible
+src/main/resources/application.properties
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+### VS Code ###
+.vscode/
+
+### Docker ###
+*.log
+*.pid
+docker-compose.override.yml
