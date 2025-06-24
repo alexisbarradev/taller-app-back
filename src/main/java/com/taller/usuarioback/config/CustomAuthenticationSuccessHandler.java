@@ -22,6 +22,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    private static final String FRONTEND_BASE_URL = "http://3.135.134.201:4200";
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
@@ -33,7 +35,6 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
             System.out.println("OAuth2User: " + oauth2User);
             
-            // Log all available attributes for debugging
             Map<String, Object> attributes = oauth2User.getAttributes();
             System.out.println("Available attributes: " + attributes.keySet());
             for (Map.Entry<String, Object> entry : attributes.entrySet()) {
@@ -41,12 +42,11 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             }
 
             String email = null;
-            // Try to find email from common claim names
             if (attributes.get("email") != null) {
                 email = attributes.get("email").toString();
-            } else if (attributes.get("emails") != null && attributes.get("emails") instanceof List && !((List<?>) attributes.get("emails")).isEmpty()) {
-                email = ((List<?>) attributes.get("emails")).get(0).toString();
-            } else if (attributes.get("upn") != null) { // User Principal Name
+            } else if (attributes.get("emails") instanceof List<?> emails && !emails.isEmpty()) {
+                email = emails.get(0).toString();
+            } else if (attributes.get("upn") != null) {
                 email = attributes.get("upn").toString();
             } else if (attributes.get("preferred_username") != null) {
                 email = attributes.get("preferred_username").toString();
@@ -55,9 +55,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             System.out.println("Extracted email: " + email);
 
             if (email == null) {
-                // Email no disponible, redirigir a error
-                System.err.println("Email not found in OAuth2 attributes. Please ensure the 'Email Addresses' claim is enabled in your Azure B2C user flow.");
-                response.sendRedirect("http://localhost:4200/login?error=EmailNotFoundInClaims");
+                System.err.println("Email not found in OAuth2 attributes.");
+                response.sendRedirect(FRONTEND_BASE_URL + "/login?error=EmailNotFoundInClaims");
                 return;
             }
 
@@ -65,13 +64,10 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             System.out.println("User exists in database: " + userExists);
 
             String name = oauth2User.getAttribute("name");
-            if (name == null) {
-                // Try other common name attributes
-                if (attributes.get("given_name") != null) {
-                    name = attributes.get("given_name").toString();
-                    if(attributes.get("family_name") != null) {
-                        name += " " + attributes.get("family_name").toString();
-                    }
+            if (name == null && attributes.get("given_name") != null) {
+                name = attributes.get("given_name").toString();
+                if (attributes.get("family_name") != null) {
+                    name += " " + attributes.get("family_name").toString();
                 }
             }
 
@@ -82,19 +78,17 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
 
             if (userExists) {
-                // Usuario registrado, redirigir al dashboard
                 System.out.println("Redirecting to dashboard");
-                response.sendRedirect("http://localhost:4200/dashboard");
+                response.sendRedirect(FRONTEND_BASE_URL + "/dashboard");
             } else {
-                // Usuario no registrado, enviar al registro
                 System.out.println("Redirecting to complete registration");
-                response.sendRedirect("http://localhost:4200/complete-registration?email=" + encodedEmail + "&name=" + encodedName);
+                response.sendRedirect(FRONTEND_BASE_URL + "/complete-registration?email=" + encodedEmail + "&name=" + encodedName);
             }
-            
+
         } catch (Exception e) {
             System.err.println("Error in CustomAuthenticationSuccessHandler: " + e.getMessage());
             e.printStackTrace();
-            response.sendRedirect("http://localhost:4200/error?reason=AuthenticationError");
+            response.sendRedirect(FRONTEND_BASE_URL + "/error?reason=AuthenticationError");
         }
     }
 }
