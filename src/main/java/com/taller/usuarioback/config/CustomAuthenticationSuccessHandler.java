@@ -22,7 +22,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    private static final String FRONTEND_BASE_URL = "http://3.135.134.201:4200";
+    //private static final String FRONTEND_BASE_URL = "http://3.135.134.201:4200";
+    private static final String FRONTEND_BASE_URL = "http://3.135.134.201";
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
