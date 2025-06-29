@@ -31,7 +31,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     @Autowired
     private JwtUtil jwtUtil;
 
-    private static final String FRONTEND_BASE_URL = "http://3.135.134.201";
+    private static final String FRONTEND_BASE_URL = "https://3.135.134.201:4200";
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
