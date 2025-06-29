@@ -1,11 +1,14 @@
 package com.taller.usuarioback.config;
 
 import com.taller.usuarioback.repository.UsuarioRepository;
+import com.taller.usuarioback.service.UserDetailsServiceImpl;
+import com.taller.usuarioback.util.JwtUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -22,7 +25,12 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    //private static final String FRONTEND_BASE_URL = "http://3.135.134.201:4200";
+    @Autowired
+    private UserDetailsServiceImpl userDetailsService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
     private static final String FRONTEND_BASE_URL = "http://3.135.134.201";
 
     @Override
@@ -32,16 +40,11 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         try {
             System.out.println("=== OAuth2 Authentication Success ===");
             System.out.println("Authentication: " + authentication);
-            
-            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-            System.out.println("OAuth2User: " + oauth2User);
-            
-            Map<String, Object> attributes = oauth2User.getAttributes();
-            System.out.println("Available attributes: " + attributes.keySet());
-            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
-                System.out.println("  " + entry.getKey() + ": " + entry.getValue());
-            }
 
+            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+            Map<String, Object> attributes = oauth2User.getAttributes();
+
+            // Extraer email desde los atributos OAuth2
             String email = null;
             if (attributes.get("email") != null) {
                 email = attributes.get("email").toString();
@@ -56,13 +59,11 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             System.out.println("Extracted email: " + email);
 
             if (email == null) {
-                System.err.println("Email not found in OAuth2 attributes.");
                 response.sendRedirect(FRONTEND_BASE_URL + "/login?error=EmailNotFoundInClaims");
                 return;
             }
 
             boolean userExists = usuarioRepository.findByCorreo(email).isPresent();
-            System.out.println("User exists in database: " + userExists);
 
             String name = oauth2User.getAttribute("name");
             if (name == null && attributes.get("given_name") != null) {
@@ -72,22 +73,22 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
                 }
             }
 
-            String encodedName = name != null
-                    ? URLEncoder.encode(name, StandardCharsets.UTF_8)
-                    : "";
-
+            String encodedName = name != null ? URLEncoder.encode(name, StandardCharsets.UTF_8) : "";
             String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
 
+            // === NUEVO: Generar token JWT y pasarlo al frontend ===
+            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            String token = jwtUtil.generateToken(userDetails);
+            String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
+
+            // Redirección con token incluido
             if (userExists) {
-                System.out.println("Redirecting to dashboard");
-                response.sendRedirect(FRONTEND_BASE_URL + "/dashboard");
+                response.sendRedirect(FRONTEND_BASE_URL + "/dashboard?token=" + encodedToken);
             } else {
-                System.out.println("Redirecting to complete registration");
-                response.sendRedirect(FRONTEND_BASE_URL + "/complete-registration?email=" + encodedEmail + "&name=" + encodedName);
+                response.sendRedirect(FRONTEND_BASE_URL + "/complete-registration?email=" + encodedEmail + "&name=" + encodedName + "&token=" + encodedToken);
             }
 
         } catch (Exception e) {
-            System.err.println("Error in CustomAuthenticationSuccessHandler: " + e.getMessage());
             e.printStackTrace();
             response.sendRedirect(FRONTEND_BASE_URL + "/error?reason=AuthenticationError");
         }
