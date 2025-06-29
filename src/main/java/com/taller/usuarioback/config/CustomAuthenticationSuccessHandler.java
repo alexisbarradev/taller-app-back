@@ -44,7 +44,6 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
             Map<String, Object> attributes = oauth2User.getAttributes();
 
-            // Extraer email desde los atributos OAuth2
             String email = null;
             if (attributes.get("email") != null) {
                 email = attributes.get("email").toString();
@@ -76,16 +75,14 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             String encodedName = name != null ? URLEncoder.encode(name, StandardCharsets.UTF_8) : "";
             String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
 
-            // === NUEVO: Generar token JWT y pasarlo al frontend ===
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-            String token = jwtUtil.generateToken(userDetails);
-            String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
-
-            // Redirección con token incluido
             if (userExists) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                String token = jwtUtil.generateToken(userDetails);
+                String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
                 response.sendRedirect(FRONTEND_BASE_URL + "/dashboard?token=" + encodedToken);
             } else {
-                response.sendRedirect(FRONTEND_BASE_URL + "/complete-registration?email=" + encodedEmail + "&name=" + encodedName + "&token=" + encodedToken);
+                // Nuevo usuario → no se genera token
+                response.sendRedirect(FRONTEND_BASE_URL + "/complete-registration?email=" + encodedEmail + "&name=" + encodedName);
             }
 
         } catch (Exception e) {
