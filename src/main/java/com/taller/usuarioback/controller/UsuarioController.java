@@ -7,6 +7,8 @@ import com.taller.usuarioback.model.RolUsuario;
 import com.taller.usuarioback.model.EstadoUsuario;
 import com.taller.usuarioback.repository.RolUsuarioRepository;
 import com.taller.usuarioback.repository.EstadoUsuarioRepository;
+import com.taller.usuarioback.service.UserDetailsServiceImpl;
+import com.taller.usuarioback.util.JwtUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +20,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,6 +48,12 @@ public class UsuarioController {
 
     @Autowired
     private EstadoUsuarioRepository estadoUsuarioRepository;
+
+    @Autowired
+    private UserDetailsServiceImpl userDetailsService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     // 🟢 POST /api/registro
     // Crea un nuevo usuario después de validar RUT, correo, usuario, rol y estado.
@@ -138,7 +147,17 @@ public class UsuarioController {
             HttpSession session = request.getSession(true);
             session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
 
-            return ResponseEntity.ok(nuevoUsuario);
+            // Generate JWT for the new user
+            UserDetails userDetails = userDetailsService.loadUserByUsername(nuevoUsuario.getCorreo());
+            String token = jwtUtil.generateToken(userDetails);
+
+            // Return user data and JWT
+            Map<String, Object> response = Map.of(
+                "user", nuevoUsuario,
+                "token", token
+            );
+
+            return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
             // Handle specific validation errors
