@@ -28,43 +28,53 @@ public class AzureB2CTokenResponseConverter implements Converter<Map<String, Obj
         System.out.println("=== Azure B2C Token Response Converter ===");
         System.out.println("Raw token response parameters: " + tokenResponseParameters);
         
+        // Extract tokens and parameters
         String accessToken = getParameterValue(tokenResponseParameters, OAuth2ParameterNames.ACCESS_TOKEN);
-        System.out.println("Access token: " + (accessToken != null ? accessToken.substring(0, Math.min(20, accessToken.length())) + "..." : "null"));
-        
-        OAuth2AccessToken.TokenType accessTokenType = getAccessTokenType(tokenResponseParameters);
-        long expiresIn = getExpiresIn(tokenResponseParameters);
+        String idToken = getParameterValue(tokenResponseParameters, "id_token");
         String refreshToken = getParameterValue(tokenResponseParameters, OAuth2ParameterNames.REFRESH_TOKEN);
         String scope = getParameterValue(tokenResponseParameters, OAuth2ParameterNames.SCOPE);
-        String idToken = getParameterValue(tokenResponseParameters, "id_token");
-
-        System.out.println("Token type: " + accessTokenType);
+        String tokenType = getParameterValue(tokenResponseParameters, OAuth2ParameterNames.TOKEN_TYPE);
+        long expiresIn = getExpiresIn(tokenResponseParameters);
+        
+        System.out.println("Access token present: " + (accessToken != null && !accessToken.isEmpty()));
+        System.out.println("ID token present: " + (idToken != null && !idToken.isEmpty()));
+        System.out.println("Token type: " + tokenType);
         System.out.println("Expires in: " + expiresIn);
         System.out.println("Scope: " + scope);
-        System.out.println("ID token present: " + (idToken != null));
 
+        // Azure B2C specific handling
+        // Some Azure B2C flows only return id_token, not access_token
         if (!StringUtils.hasText(accessToken)) {
-            System.err.println("ERROR: Access token is null or empty!");
-            if(StringUtils.hasText(idToken)) {
-                accessToken = "dummy-access-token-for-b2c";
+            System.out.println("WARNING: No access token received from Azure B2C");
+            if (StringUtils.hasText(idToken)) {
+                System.out.println("INFO: ID token present, using it as access token for B2C flow");
+                // For Azure B2C, if no access token is provided, we can use the id_token
+                // This is a common pattern in B2C flows where the id_token contains all necessary claims
+                accessToken = idToken;
             } else {
-                throw new IllegalArgumentException("Access token and ID token are null or empty");
+                System.err.println("ERROR: Neither access token nor id token received");
+                throw new IllegalArgumentException("No access token or id token received from Azure B2C");
             }
         }
 
+        // Build the OAuth2AccessTokenResponse
         OAuth2AccessTokenResponse.Builder builder = OAuth2AccessTokenResponse.withToken(accessToken)
-                .tokenType(accessTokenType)
+                .tokenType(getAccessTokenType(tokenType))
                 .expiresIn(expiresIn);
 
+        // Add refresh token if present
         if (StringUtils.hasText(refreshToken)) {
             builder.refreshToken(refreshToken);
         }
 
+        // Add scopes if present
         if (StringUtils.hasText(scope)) {
             Set<String> scopes = new HashSet<>(Arrays.asList(StringUtils.delimitedListToStringArray(scope, " ")));
             builder.scopes(scopes);
         }
 
-        if (StringUtils.hasText(idToken)) {
+        // Add additional parameters (including id_token if different from access_token)
+        if (StringUtils.hasText(idToken) && !idToken.equals(accessToken)) {
             builder.additionalParameters(Map.of("id_token", idToken));
         }
 
@@ -78,11 +88,11 @@ public class AzureB2CTokenResponseConverter implements Converter<Map<String, Obj
         return (value != null) ? value.toString() : null;
     }
 
-    private static OAuth2AccessToken.TokenType getAccessTokenType(Map<String, Object> parameters) {
-        String tokenType = getParameterValue(parameters, OAuth2ParameterNames.TOKEN_TYPE);
+    private static OAuth2AccessToken.TokenType getAccessTokenType(String tokenType) {
         if (StringUtils.hasText(tokenType) && tokenType.equalsIgnoreCase("Bearer")) {
             return OAuth2AccessToken.TokenType.BEARER;
         }
+        // Default to Bearer for Azure B2C
         return OAuth2AccessToken.TokenType.BEARER;
     }
 
@@ -92,9 +102,10 @@ public class AzureB2CTokenResponseConverter implements Converter<Map<String, Obj
             try {
                 return Long.parseLong(expiresIn);
             } catch (NumberFormatException ex) {
-                return 0L;
+                System.err.println("WARNING: Invalid expires_in value: " + expiresIn);
+                return 3600L; // Default to 1 hour
             }
         }
-        return 0L;
+        return 3600L; // Default to 1 hour if not specified
     }
 } 

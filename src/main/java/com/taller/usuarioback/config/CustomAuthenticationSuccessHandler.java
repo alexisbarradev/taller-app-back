@@ -44,50 +44,92 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
             Map<String, Object> attributes = oauth2User.getAttributes();
 
-            String email = null;
-            if (attributes.get("email") != null) {
-                email = attributes.get("email").toString();
-            } else if (attributes.get("emails") instanceof List<?> emails && !emails.isEmpty()) {
-                email = emails.get(0).toString();
-            } else if (attributes.get("upn") != null) {
-                email = attributes.get("upn").toString();
-            } else if (attributes.get("preferred_username") != null) {
-                email = attributes.get("preferred_username").toString();
-            }
-
+            // Extract email from OAuth2 attributes
+            String email = extractEmailFromAttributes(attributes);
             System.out.println("Extracted email: " + email);
 
             if (email == null) {
+                System.err.println("ERROR: No email found in OAuth2 attributes");
                 response.sendRedirect(FRONTEND_BASE_URL + "/login?error=EmailNotFoundInClaims");
                 return;
             }
 
-            boolean userExists = usuarioRepository.findByCorreo(email).isPresent();
-
-            String name = oauth2User.getAttribute("name");
-            if (name == null && attributes.get("given_name") != null) {
-                name = attributes.get("given_name").toString();
-                if (attributes.get("family_name") != null) {
-                    name += " " + attributes.get("family_name").toString();
-                }
-            }
-
+            // Extract name from OAuth2 attributes
+            String name = extractNameFromAttributes(oauth2User, attributes);
             String encodedName = name != null ? URLEncoder.encode(name, StandardCharsets.UTF_8) : "";
             String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
 
+            // Check if user exists in database
+            boolean userExists = usuarioRepository.findByCorreo(email).isPresent();
+            System.out.println("User exists in database: " + userExists);
+
             if (userExists) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                String token = jwtUtil.generateToken(userDetails);
-                String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
-                response.sendRedirect(FRONTEND_BASE_URL + "/dashboard?token=" + encodedToken);
+                // Existing user - generate JWT token and redirect to dashboard
+                System.out.println("Processing existing user: " + email);
+                try {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                    String token = jwtUtil.generateToken(userDetails);
+                    String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
+                    System.out.println("Generated JWT token for existing user");
+                    response.sendRedirect(FRONTEND_BASE_URL + "/dashboard?token=" + encodedToken);
+                } catch (Exception e) {
+                    System.err.println("ERROR: Failed to load user details for existing user: " + e.getMessage());
+                    e.printStackTrace();
+                    response.sendRedirect(FRONTEND_BASE_URL + "/error?reason=UserDetailsLoadError");
+                }
             } else {
-                // Nuevo usuario → no se genera token
+                // New user - redirect to complete registration
+                System.out.println("Processing new user: " + email);
+                System.out.println("Redirecting to complete registration with email: " + email + " and name: " + name);
                 response.sendRedirect(FRONTEND_BASE_URL + "/complete-registration?email=" + encodedEmail + "&name=" + encodedName);
             }
 
         } catch (Exception e) {
+            System.err.println("ERROR: Unexpected error in authentication success handler: " + e.getMessage());
             e.printStackTrace();
             response.sendRedirect(FRONTEND_BASE_URL + "/error?reason=AuthenticationError");
         }
+    }
+
+    private String extractEmailFromAttributes(Map<String, Object> attributes) {
+        // Try different possible email claim names
+        if (attributes.get("email") != null) {
+            return attributes.get("email").toString();
+        } else if (attributes.get("emails") instanceof List<?> emails && !emails.isEmpty()) {
+            return emails.get(0).toString();
+        } else if (attributes.get("upn") != null) {
+            return attributes.get("upn").toString();
+        } else if (attributes.get("preferred_username") != null) {
+            return attributes.get("preferred_username").toString();
+        }
+        return null;
+    }
+
+    private String extractNameFromAttributes(OAuth2User oauth2User, Map<String, Object> attributes) {
+        // Try to get name from OAuth2User first
+        String name = oauth2User.getAttribute("name");
+        
+        // If not found, try to construct from given_name and family_name
+        if (name == null) {
+            String givenName = null;
+            String familyName = null;
+            
+            if (attributes.get("given_name") != null) {
+                givenName = attributes.get("given_name").toString();
+            }
+            if (attributes.get("family_name") != null) {
+                familyName = attributes.get("family_name").toString();
+            }
+            
+            if (givenName != null && familyName != null) {
+                name = givenName + " " + familyName;
+            } else if (givenName != null) {
+                name = givenName;
+            } else if (familyName != null) {
+                name = familyName;
+            }
+        }
+        
+        return name;
     }
 }
