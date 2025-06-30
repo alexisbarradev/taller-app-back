@@ -6,6 +6,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.web.cors.*;
@@ -23,7 +24,7 @@ public class SecurityConfig {
     @Autowired
     private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
-    // Exponer AuthenticationManager para poder usarlo (p.ej. en tests)
+    // Exponer AuthenticationManager para uso en otras partes (tests, etc.)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
@@ -49,8 +50,12 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2
-                // URL de inicio del login OAuth2
+                // Página de inicio del login (Spring redirige aquí para iniciar flujo B2C)
                 .loginPage("/oauth2/authorization/B2C_1_DuocUCDemoAzure_Login")
+                // Forzamos uso de flujo OpenID Connect para que procese correctamente el id_token
+                .userInfoEndpoint(userInfo -> userInfo
+                    .oidcUserService(new OidcUserService())
+                )
                 .successHandler(customAuthenticationSuccessHandler)
                 .failureHandler(authenticationFailureHandler())
             )
@@ -67,23 +72,23 @@ public class SecurityConfig {
     public AuthenticationFailureHandler authenticationFailureHandler() {
         return new AuthenticationFailureHandler() {
             @Override
-            public void onAuthenticationFailure(HttpServletRequest request, 
-                                              HttpServletResponse response, 
-                                              org.springframework.security.core.AuthenticationException exception) 
+            public void onAuthenticationFailure(HttpServletRequest request,
+                                                HttpServletResponse response,
+                                                org.springframework.security.core.AuthenticationException exception)
                     throws IOException, ServletException {
-                
+
                 System.err.println("OAuth2 Authentication failed: " + exception.getMessage());
                 exception.printStackTrace();
-                
-                // Redirect to Angular with error information
-                String errorMessage = exception.getMessage() != null ? 
-                    exception.getMessage().replaceAll("[^a-zA-Z0-9\\s]", "") : "Authentication failed";
+
+                // Redirección al frontend Angular con mensaje de error
+                String errorMessage = exception.getMessage() != null ?
+                        exception.getMessage().replaceAll("[^a-zA-Z0-9\\s]", "") : "Authentication failed";
                 response.sendRedirect("https://3.135.134.201:4200/login?error=" + errorMessage);
             }
         };
     }
 
-    // Configuración de CORS para permitir tu Angular desde https://3.135.134.201:4200
+    // Configuración de CORS para permitir llamadas desde el frontend en Angular
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
