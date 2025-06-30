@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "https://3.135.134.201:4200")
 public class FileUploadController {
 
     // private final S3Service s3Service;

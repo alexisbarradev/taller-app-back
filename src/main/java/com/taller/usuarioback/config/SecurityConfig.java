@@ -55,7 +55,7 @@ public class SecurityConfig {
                 .failureHandler(authenticationFailureHandler())
             )
             .logout(logout -> logout
-                .logoutSuccessUrl("http://localhost:4200")
+                .logoutSuccessUrl("https://3.135.134.201:4200")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
             );
@@ -78,17 +78,17 @@ public class SecurityConfig {
                 // Redirect to Angular with error information
                 String errorMessage = exception.getMessage() != null ? 
                     exception.getMessage().replaceAll("[^a-zA-Z0-9\\s]", "") : "Authentication failed";
-                response.sendRedirect("http://localhost:4200/login?error=" + errorMessage);
+                response.sendRedirect("https://3.135.134.201:4200/login?error=" + errorMessage);
             }
         };
     }
 
-    // Configuración de CORS para permitir tu Angular desde http://localhost:4200
+    // Configuración de CORS para permitir tu Angular desde https://3.135.134.201:4200
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOriginPatterns(List.of(
-            "http://localhost:4200",
+            "https://3.135.134.201:4200",
             "http://3.135.134.201",
             "https://3.135.134.201"
         ));

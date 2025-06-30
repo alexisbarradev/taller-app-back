@@ -25,7 +25,7 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "https://3.135.134.201:4200")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
