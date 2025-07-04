@@ -93,6 +93,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOriginPatterns(List.of(
+            "http://localhost:4200",
             "https://3.135.134.201:4200",
             "http://3.135.134.201",
             "https://3.135.134.201"
