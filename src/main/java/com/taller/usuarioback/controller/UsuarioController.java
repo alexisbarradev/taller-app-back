@@ -23,6 +23,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+
+
+
 import java.util.List;
 import java.util.Map;
 import java.net.URLDecoder;
@@ -56,101 +61,93 @@ public class UsuarioController {
         }
         return ResponseEntity.ok(resultado);
     }
+// 🟢 POST /api/usuarios/imagen
 
-    // 🟢 POST /api/registro-completo
-    // Crea un nuevo usuario después de validar RUT, correo, usuario, rol y estado, y maneja la carga de archivos.
-    @PostMapping("/registro-completo")
-    public ResponseEntity<?> registrarUsuarioCompleto(
-            @RequestParam("rut") String rut,
-            @RequestParam("primerNombre") String primerNombre,
-            @RequestParam("segundoNombre") String segundoNombre,
-            @RequestParam("apellidoPaterno") String apellidoPaterno,
-            @RequestParam("apellidoMaterno") String apellidoMaterno,
-            @RequestParam("direccion") String direccion,
-            @RequestParam("usuario") String usuario,
-            @RequestParam("correo") String correo,
-            @RequestParam("rol") String rolJson,
-            @RequestParam("estado") String estadoJson,
-            @RequestParam(value = "proveedorAutenticacion", required = false) String proveedorAutenticacion,
-            @RequestParam(value = "file", required = false) MultipartFile file,
-            HttpServletRequest request) {
-        
-        try {
-            // Log the registration attempt
-            System.out.println("=== REGISTRATION ATTEMPT ===");
-            System.out.println("RUT: " + rut);
-            System.out.println("Email: " + correo);
-            System.out.println("Username: " + usuario);
-            System.out.println("Request ID: " + request.getSession().getId());
-            
-            ObjectMapper mapper = new ObjectMapper();
+@PostMapping("/registro-completo")
+public ResponseEntity<?> registrarUsuarioCompleto(
+        @RequestParam("rut") String rut,
+        @RequestParam("primerNombre") String primerNombre,
+        @RequestParam("segundoNombre") String segundoNombre,
+        @RequestParam("apellidoPaterno") String apellidoPaterno,
+        @RequestParam("apellidoMaterno") String apellidoMaterno,
+        @RequestParam("direccion") String direccion,
+        @RequestParam("usuario") String usuario,
+        @RequestParam("rol") String rolJson,
+        @RequestParam("estado") String estadoJson,
+        @RequestParam(value = "proveedorAutenticacion", required = false) String proveedorAutenticacion,
+        @RequestParam(value = "file", required = false) MultipartFile file,
+        HttpServletRequest request,
+        @AuthenticationPrincipal Jwt jwt) {
 
-            // --- Fetch Rol ---
-            Map<String, Long> rolMap = mapper.readValue(rolJson, new TypeReference<Map<String, Long>>() {});
-            Long rolId = rolMap.get("id");
-            RolUsuario rol = rolUsuarioRepository.findById(rolId)
-                    .orElseThrow(() -> new RuntimeException("Rol no encontrado para el ID: " + rolId));
+    try {
+        System.out.println("=== REGISTRATION ATTEMPT ===");
+        System.out.println("RUT: " + rut);
+        System.out.println("Username: " + usuario);
+        System.out.println("Request ID: " + request.getSession().getId());
 
-            // --- Fetch Estado ---
-            Map<String, Long> estadoMap = mapper.readValue(estadoJson, new TypeReference<Map<String, Long>>() {});
-            Long estadoId = estadoMap.get("id");
-            EstadoUsuario estado = estadoUsuarioRepository.findById(estadoId)
-                    .orElseThrow(() -> new RuntimeException("Estado no encontrado para el ID: " + estadoId));
+        // 🟡 Extrae el correo desde el JWT de Azure AD B2C
+        String correo = jwt.getClaimAsStringList("emails").get(0);
+        System.out.println("Correo extraído del token: " + correo);
 
-            // Create user object
-            Usuario usuarioObj = new Usuario();
-            usuarioObj.setRut(rut);
-            usuarioObj.setPrimerNombre(primerNombre);
-            usuarioObj.setSegundoNombre(segundoNombre);
-            usuarioObj.setApellidoPaterno(apellidoPaterno);
-            usuarioObj.setApellidoMaterno(apellidoMaterno);
-            usuarioObj.setDireccion(direccion);
-            usuarioObj.setUsuario(usuario);
-            usuarioObj.setCorreo(correo);
-            usuarioObj.setRol(rol);
-            usuarioObj.setEstado(estado);
-            usuarioObj.setProveedorAutenticacion(proveedorAutenticacion);
+        ObjectMapper mapper = new ObjectMapper();
 
-            // Handle file upload if present
-            if (file != null && !file.isEmpty()) {
-                String fileUrl = s3Service.uploadFile(file);
-                usuarioObj.setUrlContrato(fileUrl);
-            }
+        // Rol
+        Map<String, Long> rolMap = mapper.readValue(rolJson, new TypeReference<>() {});
+        Long rolId = rolMap.get("id");
+        RolUsuario rol = rolUsuarioRepository.findById(rolId)
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado para el ID: " + rolId));
 
-            // Save user
-            Usuario nuevoUsuario = usuarioService.crearUsuarioYDevolver(usuarioObj);
-            
-            System.out.println("✅ User created successfully with ID: " + nuevoUsuario.getId());
+        // Estado
+        Map<String, Long> estadoMap = mapper.readValue(estadoJson, new TypeReference<>() {});
+        Long estadoId = estadoMap.get("id");
+        EstadoUsuario estado = estadoUsuarioRepository.findById(estadoId)
+                .orElseThrow(() -> new RuntimeException("Estado no encontrado para el ID: " + estadoId));
 
-            // --- Programmatic Login ---
-            // Create a new authentication token
-            Authentication authentication = new UsernamePasswordAuthenticationToken(
-                nuevoUsuario.getUsuario(), 
-                null, // Credentials can be null for programmatic login
-                nuevoUsuario.getAuthorities() // Assumes getAuthorities() is implemented in Usuario
-            );
+        // Crear usuario
+        Usuario usuarioObj = new Usuario();
+        usuarioObj.setRut(rut);
+        usuarioObj.setPrimerNombre(primerNombre);
+        usuarioObj.setSegundoNombre(segundoNombre);
+        usuarioObj.setApellidoPaterno(apellidoPaterno);
+        usuarioObj.setApellidoMaterno(apellidoMaterno);
+        usuarioObj.setDireccion(direccion);
+        usuarioObj.setUsuario(usuario);
+        usuarioObj.setCorreo(correo);
+        usuarioObj.setRol(rol);
+        usuarioObj.setEstado(estado);
+        usuarioObj.setProveedorAutenticacion(proveedorAutenticacion);
 
-            // Set the authentication in the security context
-            SecurityContext securityContext = SecurityContextHolder.getContext();
-            securityContext.setAuthentication(authentication);
-
-            // Save the context in the session
-            HttpSession session = request.getSession(true);
-            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
-
-            return ResponseEntity.ok(nuevoUsuario);
-
-        } catch (RuntimeException e) {
-            // Handle specific validation errors
-            System.err.println("❌ Registration failed: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
-        } catch (Exception e) {
-            // Handle other unexpected errors
-            System.err.println("❌ Unexpected error during registration: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body("Error al procesar la solicitud: " + e.getMessage());
+        if (file != null && !file.isEmpty()) {
+            String fileUrl = s3Service.uploadFile(file);
+            usuarioObj.setUrlContrato(fileUrl);
         }
+
+        Usuario nuevoUsuario = usuarioService.crearUsuarioYDevolver(usuarioObj);
+        System.out.println("✅ User created successfully with ID: " + nuevoUsuario.getId());
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+            nuevoUsuario.getUsuario(), null, nuevoUsuario.getAuthorities()
+        );
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        securityContext.setAuthentication(authentication);
+        request.getSession(true).setAttribute(
+            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext
+        );
+
+        return ResponseEntity.ok(nuevoUsuario);
+
+    } catch (RuntimeException e) {
+        System.err.println("❌ Registration failed: " + e.getMessage());
+        return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+    } catch (Exception e) {
+        System.err.println("❌ Unexpected error during registration: " + e.getMessage());
+        e.printStackTrace();
+        return ResponseEntity.badRequest().body("Error al procesar la solicitud: " + e.getMessage());
     }
+}
+
+
+
 
     // 🟢 GET /api/usuarios
     // Lista todos los usuarios registrados.
@@ -186,16 +183,16 @@ public class UsuarioController {
     // Busca un usuario por correo electrónico.
     // 🔁 POST /api/usuarios/correo
     @PostMapping("/usuarios/correo")
-    public ResponseEntity<Map<String, Boolean>> verificarCorreo(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
+    public ResponseEntity<Map<String, Boolean>> verificarCorreo(@AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getClaimAsStringList("emails").get(0);
 
         if (email == null || email.isBlank()) {
-            System.out.println("❌ Email no proporcionado o vacío.");
+            System.out.println("❌ Email no disponible en el token.");
             return ResponseEntity.badRequest().body(Map.of("exists", false));
         }
 
         boolean exists = usuarioService.buscarPorCorreo(email).isPresent();
-        System.out.println("🔍 ¿Existe usuario con correo '" + email + "'? → " + exists);
+        System.out.println("🔐 Verificando existencia de usuario con correo autenticado '" + email + "' → " + exists);
 
         return ResponseEntity.ok(Map.of("exists", exists));
     }
