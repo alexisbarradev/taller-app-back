@@ -33,7 +33,6 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/registro",
                     "/api/upload",
-                    "/api/registro-completo",
                     "/create-admin",
                     "/oauth2/**",
                     "/login/**",
