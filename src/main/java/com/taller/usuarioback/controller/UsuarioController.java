@@ -182,15 +182,24 @@ public class UsuarioController {
         return ResponseEntity.ok(resultado);
     }
 
-    // 🔍 GET /api/usuarios/correo/{correo}
+    // MUY IMPORTANTE, ES EL QUE VALIDA SI EL USUARIO EXISTE O NO
     // Busca un usuario por correo electrónico.
-    @GetMapping("/usuarios/correo/{correo}")
-    public ResponseEntity<Usuario> buscarPorCorreo(@PathVariable String correo) {
-        String correoDecodificado = URLDecoder.decode(correo, StandardCharsets.UTF_8);
-        return usuarioService.buscarPorCorreo(correoDecodificado)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+    // 🔁 POST /api/usuarios/correo
+    @PostMapping("/usuarios/correo")
+    public ResponseEntity<Map<String, Boolean>> verificarCorreo(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+
+        if (email == null || email.isBlank()) {
+            System.out.println("❌ Email no proporcionado o vacío.");
+            return ResponseEntity.badRequest().body(Map.of("exists", false));
+        }
+
+        boolean exists = usuarioService.buscarPorCorreo(email).isPresent();
+        System.out.println("🔍 ¿Existe usuario con correo '" + email + "'? → " + exists);
+
+        return ResponseEntity.ok(Map.of("exists", exists));
     }
+
 
     // 🔍 GET /api/usuarios/usuario/{nombreUsuario}
     // Busca un usuario por nombre de usuario.
