@@ -116,10 +116,27 @@
         </dependency>
 
         <!-- Spring Boot OAuth2 Client -->
+        <!-- Permite que el backend actúe como cliente (login con Azure AD B2C).-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-client</artifactId>
         </dependency>
+
+        <!-- Spring Boot OAuth2 Resource Server -->
+        <!-- Permite que el backend actúe como servidor de recursos (validación de tokens JWT).-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
+        <!-- Spring Main-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+
+
 
         <!-- Spring Boot Validation -->
         <dependency>
