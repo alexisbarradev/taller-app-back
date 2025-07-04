@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -80,30 +81,34 @@ public ResponseEntity<?> registrarUsuarioCompleto(
         @AuthenticationPrincipal Jwt jwt) {
 
     try {
+        if (jwt == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token JWT no presente o inválido.");
+        }
+
         System.out.println("=== REGISTRATION ATTEMPT ===");
         System.out.println("RUT: " + rut);
         System.out.println("Username: " + usuario);
         System.out.println("Request ID: " + request.getSession().getId());
 
-        // 🟡 Extrae el correo desde el JWT de Azure AD B2C
-        String correo = jwt.getClaimAsStringList("emails").get(0);
+        List<String> emails = jwt.getClaimAsStringList("emails");
+        if (emails == null || emails.isEmpty()) {
+            return ResponseEntity.badRequest().body("El token no contiene un correo electrónico.");
+        }
+        String correo = emails.get(0);
         System.out.println("Correo extraído del token: " + correo);
 
         ObjectMapper mapper = new ObjectMapper();
 
-        // Rol
         Map<String, Long> rolMap = mapper.readValue(rolJson, new TypeReference<>() {});
         Long rolId = rolMap.get("id");
         RolUsuario rol = rolUsuarioRepository.findById(rolId)
                 .orElseThrow(() -> new RuntimeException("Rol no encontrado para el ID: " + rolId));
 
-        // Estado
         Map<String, Long> estadoMap = mapper.readValue(estadoJson, new TypeReference<>() {});
         Long estadoId = estadoMap.get("id");
         EstadoUsuario estado = estadoUsuarioRepository.findById(estadoId)
                 .orElseThrow(() -> new RuntimeException("Estado no encontrado para el ID: " + estadoId));
 
-        // Crear usuario
         Usuario usuarioObj = new Usuario();
         usuarioObj.setRut(rut);
         usuarioObj.setPrimerNombre(primerNombre);
@@ -124,15 +129,6 @@ public ResponseEntity<?> registrarUsuarioCompleto(
 
         Usuario nuevoUsuario = usuarioService.crearUsuarioYDevolver(usuarioObj);
         System.out.println("✅ User created successfully with ID: " + nuevoUsuario.getId());
-
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-            nuevoUsuario.getUsuario(), null, nuevoUsuario.getAuthorities()
-        );
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        securityContext.setAuthentication(authentication);
-        request.getSession(true).setAttribute(
-            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext
-        );
 
         return ResponseEntity.ok(nuevoUsuario);
 
