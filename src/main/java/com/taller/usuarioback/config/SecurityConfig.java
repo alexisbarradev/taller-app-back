@@ -8,18 +8,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.web.cors.*;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
 
-import java.io.IOException;
 import java.util.List;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
 @Configuration
 @EnableWebSecurity
@@ -48,10 +43,6 @@ public class SecurityConfig {
                 ).permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2Login(oauth2 -> oauth2
-                .loginPage("/oauth2/authorization/B2C_1_DuocUCDemoAzure_Login")
-                .failureHandler(authenticationFailureHandler())
-            )
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt
                     .jwtAuthenticationConverter(new JwtAuthenticationConverter())
@@ -74,20 +65,6 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
-    }
-
-    @Bean
-    public AuthenticationFailureHandler authenticationFailureHandler() {
-        return (HttpServletRequest request, HttpServletResponse response,
-                org.springframework.security.core.AuthenticationException exception) -> {
-
-            System.err.println("OAuth2 Authentication failed: " + exception.getMessage());
-            exception.printStackTrace();
-
-            String errorMessage = exception.getMessage() != null ?
-                    exception.getMessage().replaceAll("[^a-zA-Z0-9\\s]", "") : "Authentication failed";
-            response.sendRedirect("https://3.135.134.201:4200/login?error=" + errorMessage);
-        };
     }
 
     @Bean
