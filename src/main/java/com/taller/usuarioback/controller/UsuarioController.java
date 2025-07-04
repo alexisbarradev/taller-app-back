@@ -130,7 +130,14 @@ public ResponseEntity<?> registrarUsuarioCompleto(
         Usuario nuevoUsuario = usuarioService.crearUsuarioYDevolver(usuarioObj);
         System.out.println("✅ User created successfully with ID: " + nuevoUsuario.getId());
 
-        return ResponseEntity.ok(nuevoUsuario);
+        // 🔁 Incluir el mismo token JWT en la respuesta
+        Map<String, Object> response = Map.of(
+    "usuario", nuevoUsuario,
+    "token", jwt.getTokenValue()  // ✅ solo esto, sin getToken()
+);
+
+
+        return ResponseEntity.ok(response);
 
     } catch (RuntimeException e) {
         System.err.println("❌ Registration failed: " + e.getMessage());
