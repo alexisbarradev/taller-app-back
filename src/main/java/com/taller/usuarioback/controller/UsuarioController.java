@@ -230,4 +230,15 @@ public ResponseEntity<?> registrarUsuarioCompleto(
             "attributes", principal.getAttributes()
         );
     }
+
+    // 05 JUL:
+    // 🔍 GET /api/usuarios/correo/{correo}
+    // Devuelve el rol del usuario a partir de su correo
+    @GetMapping("/usuarios/correo/{correo}")
+    public ResponseEntity<Map<String, Integer>> obtenerRolPorCorreo(@PathVariable String correo) {
+        return usuarioService.buscarPorCorreo(correo)
+            .map(usuario -> ResponseEntity.ok(Map.of("rol", usuario.getRol().getId().intValue())))
+              .orElse(ResponseEntity.notFound().build());
+    }
+
 }
