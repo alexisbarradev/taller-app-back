@@ -150,16 +150,6 @@ public ResponseEntity<?> registrarUsuarioCompleto(
 }
 
 
-
-
-    // 🟢 GET /api/usuarios
-    // Lista todos los usuarios registrados.
-    @GetMapping("/usuarios")
-    public ResponseEntity<List<Usuario>> listarUsuarios() {
-        List<Usuario> usuarios = usuarioService.listarUsuarios();
-        return ResponseEntity.ok(usuarios);
-    }
-
     // 🟡 PUT /api/{id}
     // Actualiza un usuario existente por su ID.
     @PutMapping("/{id}")
@@ -240,5 +230,45 @@ public ResponseEntity<?> registrarUsuarioCompleto(
             .map(usuario -> ResponseEntity.ok(Map.of("rol", usuario.getRol().getId().intValue())))
               .orElse(ResponseEntity.notFound().build());
     }
+    // ✅ GET /api/usuarios
+    // Lista todos los usuarios registrados.
+    // Este endpoint ahora valida que:
+    // 1. El JWT del usuario esté presente y sea válido.
+    // 2. El correo del usuario exista en la base de datos.
+    // 3. El usuario tenga rol de administrador (rol_id == 1).
+    // Solo en ese caso se permite acceder a la lista completa de usuarios.
+    // Si no se cumple alguna condición, se devuelve un error 403 (Prohibido).
+    @GetMapping("/usuarios")
+    public ResponseEntity<?> listarUsuarios(@AuthenticationPrincipal Jwt jwt) {
+        try {
+            List<String> emails = jwt.getClaimAsStringList("emails");
+            if (emails == null || emails.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "No se pudo extraer el correo del token JWT."));
+            }
+            String correo = emails.get(0);
+
+            Optional<Usuario> optUsuario = usuarioService.buscarPorCorreo(correo);
+            if (optUsuario.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Usuario no registrado en el sistema."));
+            }
+
+            Usuario usuario = optUsuario.get();
+
+            if (usuario.getRol().getId() != 1) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Acceso denegado: se requieren privilegios de administrador."));
+            }
+
+            List<Usuario> usuarios = usuarioService.listarUsuarios();
+            return ResponseEntity.ok(usuarios);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error interno al procesar la solicitud."));
+        }
+    }
+
 
 }
