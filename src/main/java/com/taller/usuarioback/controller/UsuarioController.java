@@ -153,16 +153,7 @@ public ResponseEntity<?> registrarUsuarioCompleto(
 }
 
 
-    // 🟡 PUT /api/{id}
-    // Actualiza un usuario existente por su ID.
-    @PutMapping("/usuarios/{id}")
-    public ResponseEntity<String> actualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuarioActualizado) {
-        String resultado = usuarioService.actualizarUsuario(id, usuarioActualizado);
-        if (resultado.startsWith("Error")) {
-            return ResponseEntity.badRequest().body(resultado);
-        }
-        return ResponseEntity.ok(resultado);
-    }
+    
 
     // 🔴 DELETE /api/{id}
     // Elimina un usuario por su ID.
@@ -283,6 +274,81 @@ public ResponseEntity<?> registrarUsuarioCompleto(
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+// 🟡 PUT /api/usuarios/{id}
+// Actualiza un usuario existente con todos los datos, incluyendo imagen y JWT
+@PutMapping("/usuarios/{id}")
+public ResponseEntity<?> actualizarUsuarioCompleto(
+        @PathVariable Long id,
+        @RequestParam("rut") String rut,
+        @RequestParam("primerNombre") String primerNombre,
+        @RequestParam("segundoNombre") String segundoNombre,
+        @RequestParam("apellidoPaterno") String apellidoPaterno,
+        @RequestParam("apellidoMaterno") String apellidoMaterno,
+        @RequestParam("direccion") String direccion,
+        @RequestParam("usuario") String usuario,
+        @RequestParam("rol") String rolJson,
+        @RequestParam("estado") String estadoJson,
+        @RequestParam(value = "proveedorAutenticacion", required = false) String proveedorAutenticacion,
+        @RequestParam(value = "file", required = false) MultipartFile file,
+        @AuthenticationPrincipal Jwt jwt) {
+
+    try {
+        if (jwt == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Token JWT no presente o inválido.");
+        }
+
+        List<String> emails = jwt.getClaimAsStringList("emails");
+        if (emails == null || emails.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body("El token no contiene un correo electrónico.");
+        }
+        String correo = emails.get(0);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        Map<String, Long> rolMap = mapper.readValue(rolJson, new TypeReference<>() {});
+        Long rolId = rolMap.get("id");
+        RolUsuario rol = rolUsuarioRepository.findById(rolId)
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado para el ID: " + rolId));
+
+        Map<String, Long> estadoMap = mapper.readValue(estadoJson, new TypeReference<>() {});
+        Long estadoId = estadoMap.get("id");
+        EstadoUsuario estado = estadoUsuarioRepository.findById(estadoId)
+                .orElseThrow(() -> new RuntimeException("Estado no encontrado para el ID: " + estadoId));
+
+        Usuario usuarioObj = new Usuario();
+        usuarioObj.setId(id);
+        usuarioObj.setRut(rut);
+        usuarioObj.setPrimerNombre(primerNombre);
+        usuarioObj.setSegundoNombre(segundoNombre);
+        usuarioObj.setApellidoPaterno(apellidoPaterno);
+        usuarioObj.setApellidoMaterno(apellidoMaterno);
+        usuarioObj.setDireccion(direccion);
+        usuarioObj.setUsuario(usuario);
+        usuarioObj.setCorreo(correo);
+        usuarioObj.setRol(rol);
+        usuarioObj.setEstado(estado);
+        usuarioObj.setProveedorAutenticacion(proveedorAutenticacion);
+
+        if (file != null && !file.isEmpty()) {
+            String fileUrl = s3Service.uploadFile(file);
+            usuarioObj.setUrlContrato(fileUrl);
+        }
+
+        String resultado = usuarioService.actualizarUsuario(id, usuarioObj);
+        if (resultado.startsWith("Error")) {
+            return ResponseEntity.badRequest().body(resultado);
+        }
+
+        return ResponseEntity.ok(Map.of("mensaje", resultado));
+
+    } catch (Exception e) {
+        return ResponseEntity.badRequest()
+                .body("Error al actualizar el usuario: " + e.getMessage());
+    }
+}
 
 
 
