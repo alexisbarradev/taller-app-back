@@ -114,4 +114,9 @@ public class UsuarioService {
     public Optional<Usuario> buscarPorRut(String rut) {
         return usuarioRepository.findByRut(rut);
     }
+
+    public Optional<Usuario> buscarPorId(Long id) {
+        return usuarioRepository.findById(id);
+    }
+
 }

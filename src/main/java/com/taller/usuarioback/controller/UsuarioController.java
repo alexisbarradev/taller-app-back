@@ -274,4 +274,16 @@ public ResponseEntity<?> registrarUsuarioCompleto(
     }
 
 
+    // ENDPOINT PARA RASTREAR UN USUARIO...LO USAREMOS PARA EL PUT:
+    // 🔍 GET /api/usuarios/{id}
+// Obtiene un usuario por su ID
+@GetMapping("/usuarios/{id}")
+public ResponseEntity<Usuario> obtenerUsuarioPorId(@PathVariable Long id) {
+    return usuarioService.buscarPorId(id)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+}
+
+
+
 }
