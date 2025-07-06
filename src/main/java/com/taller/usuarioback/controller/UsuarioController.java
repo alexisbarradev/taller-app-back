@@ -287,6 +287,7 @@ public ResponseEntity<?> actualizarUsuarioCompleto(
         @RequestParam("apellidoMaterno") String apellidoMaterno,
         @RequestParam("direccion") String direccion,
         @RequestParam("usuario") String usuario,
+        @RequestParam("correo") String correo, // ✅ Correo desde Angular
         @RequestParam("rol") String rolJson,
         @RequestParam("estado") String estadoJson,
         @RequestParam(value = "proveedorAutenticacion", required = false) String proveedorAutenticacion,
@@ -298,13 +299,6 @@ public ResponseEntity<?> actualizarUsuarioCompleto(
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Token JWT no presente o inválido.");
         }
-
-        List<String> emails = jwt.getClaimAsStringList("emails");
-        if (emails == null || emails.isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body("El token no contiene un correo electrónico.");
-        }
-        String correo = emails.get(0);
 
         ObjectMapper mapper = new ObjectMapper();
 
@@ -327,7 +321,7 @@ public ResponseEntity<?> actualizarUsuarioCompleto(
         usuarioObj.setApellidoMaterno(apellidoMaterno);
         usuarioObj.setDireccion(direccion);
         usuarioObj.setUsuario(usuario);
-        usuarioObj.setCorreo(correo);
+        usuarioObj.setCorreo(correo); // ✅ Usar correo enviado por el formulario
         usuarioObj.setRol(rol);
         usuarioObj.setEstado(estado);
         usuarioObj.setProveedorAutenticacion(proveedorAutenticacion);
