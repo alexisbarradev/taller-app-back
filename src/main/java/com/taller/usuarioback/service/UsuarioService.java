@@ -45,7 +45,6 @@ public class UsuarioService {
     }
 
     public Usuario crearUsuarioYDevolver(Usuario usuario) {
-        // Check for duplicates and provide specific error messages
         if (usuarioRepository.existsByRut(usuario.getRut())) {
             throw new RuntimeException("El RUT ya existe en el sistema.");
         }
@@ -89,6 +88,17 @@ public class UsuarioService {
         existente.setRut(usuarioActualizado.getRut());
         existente.setRol(usuarioActualizado.getRol());
         existente.setEstado(usuarioActualizado.getEstado());
+        existente.setProveedorAutenticacion(usuarioActualizado.getProveedorAutenticacion());
+        if (usuarioActualizado.getUrlContrato() != null) {
+            existente.setUrlContrato(usuarioActualizado.getUrlContrato());
+        }
+
+        // 🧪 Logging antes de guardar
+        System.out.println("🧪 Guardando usuario:");
+        System.out.println("ID: " + existente.getId());
+        System.out.println("Correo: " + existente.getCorreo());
+        System.out.println("RUT: " + existente.getRut());
+        System.out.println("Usuario: " + existente.getUsuario());
 
         usuarioRepository.save(existente);
 
@@ -118,5 +128,4 @@ public class UsuarioService {
     public Optional<Usuario> buscarPorId(Long id) {
         return usuarioRepository.findById(id);
     }
-
 }
