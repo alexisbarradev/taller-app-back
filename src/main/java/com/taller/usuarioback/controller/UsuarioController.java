@@ -155,7 +155,7 @@ public ResponseEntity<?> registrarUsuarioCompleto(
 
     // 🟡 PUT /api/{id}
     // Actualiza un usuario existente por su ID.
-    @PutMapping("/{id}")
+    @PutMapping("/usuarios/{id}")
     public ResponseEntity<String> actualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuarioActualizado) {
         String resultado = usuarioService.actualizarUsuario(id, usuarioActualizado);
         if (resultado.startsWith("Error")) {
@@ -276,13 +276,13 @@ public ResponseEntity<?> registrarUsuarioCompleto(
 
     // ENDPOINT PARA RASTREAR UN USUARIO...LO USAREMOS PARA EL PUT:
     // 🔍 GET /api/usuarios/{id}
-// Obtiene un usuario por su ID
-@GetMapping("/usuarios/{id}")
-public ResponseEntity<Usuario> obtenerUsuarioPorId(@PathVariable Long id) {
-    return usuarioService.buscarPorId(id)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
-}
+    // Obtiene un usuario por su ID
+    @GetMapping("/usuarios/{id}")
+    public ResponseEntity<Usuario> obtenerUsuarioPorId(@PathVariable Long id) {
+        return usuarioService.buscarPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 
 
 
