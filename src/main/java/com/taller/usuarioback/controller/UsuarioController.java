@@ -349,7 +349,6 @@ public ResponseEntity<Map<String, Long>> obtenerIdPorCorreo(@PathVariable String
     return usuarioService.buscarPorCorreo(correo)
         .map(usuario -> ResponseEntity.ok(Map.of("id", usuario.getId())))
         .orElse(ResponseEntity.notFound().build());
-
-
-
 }
+
+} // Cierre de la clase UsuarioController
