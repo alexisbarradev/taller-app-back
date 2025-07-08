@@ -344,6 +344,12 @@ public ResponseEntity<?> actualizarUsuarioCompleto(
     }
 }
 
+@GetMapping("/usuarios/id-por-correo/{correo}")
+public ResponseEntity<Map<String, Long>> obtenerIdPorCorreo(@PathVariable String correo) {
+    return usuarioService.buscarPorCorreo(correo)
+        .map(usuario -> ResponseEntity.ok(Map.of("id", usuario.getId())))
+        .orElse(ResponseEntity.notFound().build());
+
 
 
 }
