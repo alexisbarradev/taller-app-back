@@ -73,7 +73,8 @@ public class SecurityConfig {
             "http://localhost:4200",
             "https://3.135.134.201:4200",
             "http://3.135.134.201",
-            "https://3.135.134.201"
+            "https://3.135.134.201",
+            "https://taller-frontend-27684202408.us-central1.run.app"
         ));
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         cfg.setAllowedHeaders(List.of("*"));
