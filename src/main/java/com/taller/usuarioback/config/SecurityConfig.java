@@ -15,16 +15,21 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import java.util.List;
 
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
     @Value("${azure.ad.b2c.jwk-set-uri}")
     private String jwkSetUri;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        logger.info("Cargando configuración de SecurityFilterChain para usuarioback. Excepciones públicas: /api/geografia/**, /api/comunidad/**, /api/regiones/**, /api/provincias/**, /api/comunas/**");
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
@@ -40,6 +45,7 @@ public class SecurityConfig {
                     "/api/oauth2-error",
                     "/api/oauth2-debug",
                     // Excepciones públicas para geografía y comunidad
+                    "/api/geografia/comunidades",
                     "/api/geografia/**",
                     "/api/comunidad/**",
                     "/api/regiones/**",
