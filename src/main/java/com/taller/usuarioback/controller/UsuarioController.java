@@ -7,6 +7,10 @@ import com.taller.usuarioback.model.RolUsuario;
 import com.taller.usuarioback.model.EstadoUsuario;
 import com.taller.usuarioback.repository.RolUsuarioRepository;
 import com.taller.usuarioback.repository.EstadoUsuarioRepository;
+import com.taller.usuarioback.repository.RegionRepository;
+import com.taller.usuarioback.repository.ProvinciaRepository;
+import com.taller.usuarioback.repository.ComunaRepository;
+import com.taller.usuarioback.repository.ComunidadRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,6 +59,15 @@ public class UsuarioController {
     @Autowired
     private EstadoUsuarioRepository estadoUsuarioRepository;
 
+    @Autowired
+    private RegionRepository regionRepository;
+    @Autowired
+    private ProvinciaRepository provinciaRepository;
+    @Autowired
+    private ComunaRepository comunaRepository;
+    @Autowired
+    private ComunidadRepository comunidadRepository;
+
     // 🟢 POST /api/registro
     // Crea un nuevo usuario después de validar RUT, correo, usuario, rol y estado.
     @PostMapping("/registro")
@@ -76,8 +89,12 @@ public ResponseEntity<?> registrarUsuarioCompleto(
         @RequestParam("apellidoMaterno") String apellidoMaterno,
         @RequestParam("direccion") String direccion,
         @RequestParam("usuario") String usuario,
+        @RequestParam("numeroContacto") String numeroContacto,
         @RequestParam("rol") String rolJson,
         @RequestParam("estado") String estadoJson,
+        @RequestParam("idRegion") Long idRegion,
+        @RequestParam("idProvincia") Long idProvincia,
+        @RequestParam("idComuna") Long idComuna,
         @RequestParam(value = "proveedorAutenticacion", required = false) String proveedorAutenticacion,
         @RequestParam(value = "file", required = false) MultipartFile file,
         HttpServletRequest request,
@@ -124,6 +141,10 @@ public ResponseEntity<?> registrarUsuarioCompleto(
         usuarioObj.setRol(rol);
         usuarioObj.setEstado(estado);
         usuarioObj.setProveedorAutenticacion(proveedorAutenticacion);
+        usuarioObj.setNumeroContacto(numeroContacto);
+        usuarioObj.setRegion(regionRepository.findById(idRegion).orElse(null));
+        usuarioObj.setProvincia(provinciaRepository.findById(idProvincia).orElse(null));
+        usuarioObj.setComuna(comunaRepository.findById(idComuna).orElse(null));
 
         if (file != null && !file.isEmpty()) {
             String fileUrl = s3Service.uploadFile(file);
@@ -288,8 +309,13 @@ public ResponseEntity<?> actualizarUsuarioCompleto(
         @RequestParam("direccion") String direccion,
         @RequestParam("usuario") String usuario,
         @RequestParam("correo") String correo, // ✅ Correo desde Angular
+        @RequestParam("numeroContacto") String numeroContacto,
         @RequestParam("rol") String rolJson,
         @RequestParam("estado") String estadoJson,
+        @RequestParam("idRegion") Long idRegion,
+        @RequestParam("idProvincia") Long idProvincia,
+        @RequestParam("idComuna") Long idComuna,
+        @RequestParam("idComunidad") Long idComunidad,
         @RequestParam(value = "proveedorAutenticacion", required = false) String proveedorAutenticacion,
         @RequestParam(value = "file", required = false) MultipartFile file,
         @AuthenticationPrincipal Jwt jwt) {
@@ -325,6 +351,11 @@ public ResponseEntity<?> actualizarUsuarioCompleto(
         usuarioObj.setRol(rol);
         usuarioObj.setEstado(estado);
         usuarioObj.setProveedorAutenticacion(proveedorAutenticacion);
+        usuarioObj.setNumeroContacto(numeroContacto);
+        usuarioObj.setRegion(regionRepository.findById(idRegion).orElse(null));
+        usuarioObj.setProvincia(provinciaRepository.findById(idProvincia).orElse(null));
+        usuarioObj.setComuna(comunaRepository.findById(idComuna).orElse(null));
+        usuarioObj.setComunidad(comunidadRepository.findById(idComunidad).orElse(null));
 
         if (file != null && !file.isEmpty()) {
             String fileUrl = s3Service.uploadFile(file);
