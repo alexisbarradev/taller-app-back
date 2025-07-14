@@ -3,9 +3,11 @@ package com.taller.usuarioback.controller;
 import com.taller.usuarioback.repository.RegionRepository;
 import com.taller.usuarioback.repository.ProvinciaRepository;
 import com.taller.usuarioback.repository.ComunaRepository;
+import com.taller.usuarioback.repository.ComunidadRepository;
 import com.taller.usuarioback.model.Region;
 import com.taller.usuarioback.model.Provincia;
 import com.taller.usuarioback.model.Comuna;
+import com.taller.usuarioback.model.Comunidad;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +27,9 @@ public class GeografiaController {
 
     @Autowired
     private ComunaRepository comunaRepository;
+
+    @Autowired
+    private ComunidadRepository comunidadRepository;
 
     // Obtener todas las regiones
     @GetMapping("/regiones")
@@ -59,5 +64,12 @@ public class GeografiaController {
     public ResponseEntity<List<Comuna>> obtenerTodasComunas() {
         List<Comuna> comunas = comunaRepository.findAll();
         return ResponseEntity.ok(comunas);
+    }
+
+    // Obtener todas las comunidades
+    @GetMapping("/comunidades")
+    public ResponseEntity<List<Comunidad>> obtenerTodasComunidades() {
+        List<Comunidad> comunidades = comunidadRepository.findAll();
+        return ResponseEntity.ok(comunidades);
     }
 } 
