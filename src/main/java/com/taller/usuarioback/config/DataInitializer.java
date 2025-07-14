@@ -86,7 +86,6 @@ public class DataInitializer {
                 if (regionRepo.findByNombre(nombreRegion) == null) {
                     Region region = new Region();
                     region.setNombre(nombreRegion);
-                    region.setCodigo(nombreRegion.replaceAll("\\s+", "").toLowerCase());
                     regionRepo.save(region);
                 }
             }
@@ -291,7 +290,6 @@ public class DataInitializer {
             if (provincia == null) {
                 provincia = new Provincia();
                 provincia.setNombre(provinciaData.nombre);
-                provincia.setCodigo(provinciaData.nombre.toLowerCase().replaceAll("\\s+", "-"));
                 provincia.setRegion(region);
                 provincia = provinciaRepo.save(provincia);
                 System.out.println("Provincia creada: " + provinciaData.nombre + " en " + nombreRegion);
@@ -303,7 +301,6 @@ public class DataInitializer {
                 if (comuna == null) {
                     comuna = new Comuna();
                     comuna.setNombre(nombreComuna);
-                    comuna.setCodigo(nombreComuna.toLowerCase().replaceAll("\\s+", "-"));
                     comuna.setProvincia(provincia);
                     comunaRepo.save(comuna);
                     System.out.println("Comuna creada: " + nombreComuna + " en " + provinciaData.nombre);
