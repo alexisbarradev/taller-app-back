@@ -38,7 +38,13 @@ public class SecurityConfig {
                     "/login/**",
                     "/api/oauth2-test",
                     "/api/oauth2-error",
-                    "/api/oauth2-debug"
+                    "/api/oauth2-debug",
+                    // Excepciones públicas para geografía y comunidad
+                    "/api/geografia/**",
+                    "/api/comunidad/**",
+                    "/api/regiones/**",
+                    "/api/provincias/**",
+                    "/api/comunas/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
