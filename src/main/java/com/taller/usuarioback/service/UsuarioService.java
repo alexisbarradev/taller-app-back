@@ -86,9 +86,16 @@ public class UsuarioService {
         existente.setCorreo(usuarioActualizado.getCorreo());
         existente.setUsuario(usuarioActualizado.getUsuario());
         existente.setRut(usuarioActualizado.getRut());
+        existente.setNumeroContacto(usuarioActualizado.getNumeroContacto());
+        existente.setDireccion(usuarioActualizado.getDireccion());
         existente.setRol(usuarioActualizado.getRol());
         existente.setEstado(usuarioActualizado.getEstado());
         existente.setProveedorAutenticacion(usuarioActualizado.getProveedorAutenticacion());
+        existente.setRegion(usuarioActualizado.getRegion());
+        existente.setProvincia(usuarioActualizado.getProvincia());
+        existente.setComuna(usuarioActualizado.getComuna());
+        existente.setComunidad(usuarioActualizado.getComunidad());
+        
         if (usuarioActualizado.getUrlContrato() != null) {
             existente.setUrlContrato(usuarioActualizado.getUrlContrato());
         }
@@ -99,6 +106,11 @@ public class UsuarioService {
         System.out.println("Correo: " + existente.getCorreo());
         System.out.println("RUT: " + existente.getRut());
         System.out.println("Usuario: " + existente.getUsuario());
+        System.out.println("Número de contacto: " + existente.getNumeroContacto());
+        System.out.println("Región: " + (existente.getRegion() != null ? existente.getRegion().getNombre() : "null"));
+        System.out.println("Provincia: " + (existente.getProvincia() != null ? existente.getProvincia().getNombre() : "null"));
+        System.out.println("Comuna: " + (existente.getComuna() != null ? existente.getComuna().getNombre() : "null"));
+        System.out.println("Comunidad: " + (existente.getComunidad() != null ? existente.getComunidad().getNombreComunidad() : "null"));
 
         usuarioRepository.save(existente);
 

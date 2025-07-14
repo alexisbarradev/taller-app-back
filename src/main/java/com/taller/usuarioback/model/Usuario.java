@@ -3,6 +3,7 @@ package com.taller.usuarioback.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -52,6 +53,11 @@ public class Usuario implements UserDetails {
     @NotBlank
     private String direccion;
 
+    @Column(nullable = false)
+    @NotBlank
+    @Pattern(regexp = "^\\d+$", message = "El número de contacto debe contener solo dígitos.")
+    private String numeroContacto;
+
     @Column(name = "proveedor_autenticacion", length = 50)
     private String proveedorAutenticacion;
 
@@ -62,6 +68,22 @@ public class Usuario implements UserDetails {
     @ManyToOne
     @JoinColumn(name = "id_estado", nullable = false)
     private EstadoUsuario estado;
+
+    @ManyToOne
+    @JoinColumn(name = "id_region")
+    private Region region;
+
+    @ManyToOne
+    @JoinColumn(name = "id_provincia")
+    private Provincia provincia;
+
+    @ManyToOne
+    @JoinColumn(name = "id_comuna")
+    private Comuna comuna;
+
+    @ManyToOne
+    @JoinColumn(name = "id_comunidad")
+    private Comunidad comunidad;
 
     public Usuario() {}
 
@@ -183,6 +205,14 @@ public class Usuario implements UserDetails {
         this.direccion = direccion;
     }
 
+    public String getNumeroContacto() {
+        return numeroContacto;
+    }
+
+    public void setNumeroContacto(String numeroContacto) {
+        this.numeroContacto = numeroContacto;
+    }
+
     public String getProveedorAutenticacion() {
         return proveedorAutenticacion;
     }
@@ -206,4 +236,13 @@ public class Usuario implements UserDetails {
     public void setEstado(EstadoUsuario estado) {
         this.estado = estado;
     }
+
+    public Region getRegion() { return region; }
+    public void setRegion(Region region) { this.region = region; }
+    public Provincia getProvincia() { return provincia; }
+    public void setProvincia(Provincia provincia) { this.provincia = provincia; }
+    public Comuna getComuna() { return comuna; }
+    public void setComuna(Comuna comuna) { this.comuna = comuna; }
+    public Comunidad getComunidad() { return comunidad; }
+    public void setComunidad(Comunidad comunidad) { this.comunidad = comunidad; }
 }
