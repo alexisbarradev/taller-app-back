@@ -314,7 +314,10 @@ public class DataInitializer {
         if (comunidad == null) {
             comunidad = new Comunidad();
             comunidad.setNombreComunidad(nombreComunidad);
+            comunidad.setDireccion("Dirección por defecto - " + nombreComunidad);
             comunidad.setComuna(comuna);
+            comunidad.setProvincia(comuna.getProvincia());
+            comunidad.setRegion(comuna.getProvincia().getRegion());
             comunidadRepo.save(comunidad);
             System.out.println("✅ Comunidad creada: " + nombreComunidad + " en " + comuna.getNombre());
         } else {
